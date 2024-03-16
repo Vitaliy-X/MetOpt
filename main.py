@@ -4,8 +4,8 @@ from scipy.optimize import minimize
 from sympy import Symbol, lambdify, parsing
 
 
-# Main.Task №1
-def gradient_descent(foo, x0, y0, step=0.1, eps=0.0001):
+# Main.Task №1 and №2
+def gradient_descent(foo, x0, y0, step=0.1, eps=0.0001, method='standard'):
     x, y = Symbol('x'), Symbol('y')
     parsed = parsing.parse_expr(foo)
     f = lambdify((x, y), parsed)
@@ -13,18 +13,21 @@ def gradient_descent(foo, x0, y0, step=0.1, eps=0.0001):
     f_y = lambdify((x, y), parsed.diff(y))
 
     while True:
-        x_k = x0 - step * f_x(x0, y0)
-        y_k = y0 - step * f_y(x0, y0)
+        if method == 'golden_ratio':
+            step_x = one_dimensional_search(lambda x_val: f(x_val, y0), x0 - step, x0 + step, eps)
+            step_y = one_dimensional_search(lambda y_val: f(x0, y_val), y0 - step, y0 + step, eps)
+            x_k = x0 - (x0 - step_x)
+            y_k = y0 - (y0 - step_y)
+        else:
+            x_k = x0 - step * f_x(x0, y0)
+            y_k = y0 - step * f_y(x0, y0)
         if np.abs(f(x_k, y_k) - f(x0, y0)) < eps:
             return {'x': (round(x_k, 5), round(y_k, 5)), 'fun': round(f(x_k, y_k), 5)}
         x0, y0 = x_k, y_k
 
 
 # Main.Task №2
-def one_dimensional_search(foo, l, r, eps=0.0001):
-    x = Symbol('x')
-    f = lambdify(x, parsing.parse_expr(foo))
-
+def one_dimensional_search(f, l, r, eps=0.0001):
     phi = (1 + np.sqrt(5)) / 2
 
     while not np.abs(r - l) < eps:
@@ -35,7 +38,8 @@ def one_dimensional_search(foo, l, r, eps=0.0001):
         else:
             r = x2
 
-    return {'x': round((r + l) / 2, 5), 'fun': round(f((r + l) / 2), 5)}
+    # return {'x': round((r + l) / 2, 5), 'fun': round(f((r + l) / 2), 5)}
+    return round((r + l) / 2, 5)
 
 
 def gradient_descent_by_one_dimensional_search():
@@ -73,7 +77,7 @@ def main():
     """
     Gradient descent:
     f = x^2 + y^2 :SUCCESS:
-    f = x^2 * y^2 * ln(4 * x^2 + y^2) :SUCCESS:
+    f = x^2 * y^2 * ln(4 * x^2 + y^2) :SUCCESS: !!! don't use "^" in python !!!
     f = -0.83 * x^2 - 0.23 * y^2 :REJECT: (-infinity)
 
     One dimensional search (Golden-section search):
@@ -86,10 +90,10 @@ def main():
     """
 
     create_plot(lambda x: (x - 2) ** 2 + 4)
-    print(one_dimensional_search('(x - 2) ** 2 + 4', -10, 10))
+    print(one_dimensional_search(lambda x: (x - 2) ** 2 + 4, -10, 10))
 
     create_surface(lambda x, y: x ** 2 + y ** 2)
-    print(gradient_descent('x ** 2 + y ** 2', -1, 1))
+    print(gradient_descent('x**2 * y**2 * ln(4 * x**2 + y**2)', -1, 1, method='golden_ratio'))
     print(nelder_mead(lambda x: x[0] ** 2 + x[1] ** 2, -1, 1))
 
     plt.show()
