@@ -77,7 +77,7 @@ def main():
     """
     Gradient descent:
     f = x^2 + y^2 :SUCCESS:
-    f = x^2 * y^2 * ln(4 * x^2 + y^2) :SUCCESS: !!! don't use "^" in python !!!
+    f = x^2 * y^2 * ln(4 * x^2 + y^2) :SUCCESS:
     f = -0.83 * x^2 - 0.23 * y^2 :REJECT: (-infinity)
 
     One dimensional search (Golden-section search):
