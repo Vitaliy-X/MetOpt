@@ -34,7 +34,9 @@ def gradient_descent(foo, x0, y0, step=0.1, eps=0.0001, method='standard'):
         if np.abs(f(x_k, y_k) - f(x0, y0)) < eps:
             break
         x0, y0 = x_k, y_k
-   return res_x, res_y, res_z, {'x': (round(x_k, 5), round(y_k, 5)), 'fun': round(f(x_k, y_k), 5)}
+        
+    return (res_x, res_y, res_z, 
+            {'x': (round(x_k, 5), round(y_k, 5)), 'fun': round(f(x_k, y_k), 5)})
 
 # Main.Task №2
 def golden_ratio(f, l, r, eps=0.0001):
@@ -43,12 +45,11 @@ def golden_ratio(f, l, r, eps=0.0001):
     while not np.abs(r - l) < eps:
         x1 = r - (r - l) / phi
         x2 = l + (r - l) / phi
-        if f(x1) >= f(x2):
-            l = x1
-        else:
+        if f(x1) < f(x2):
             r = x2
-
-    # return {'x': round((r + l) / 2, 5), 'fun': round(f((r + l) / 2), 5)}
+        else:
+            l = x1
+            
     return round((r + l) / 2, 5)
 
 
@@ -67,20 +68,21 @@ def dichotomy(f, l, r, eps=0.0001):
             r = x2
         else:
             l = x1
+            
     return round((r + l) / 2, 5)
 
 
 def level_lines(x, y,surface_func, bounds=(-4, 4), num=1000):
     fig = plt.figure()
     axes = fig.add_subplot()
+    axes.set_xlabel('X')
+    axes.set_ylabel('Y')
+    axes.set_title('Level lines')
+    
     xgrid, ygrid = np.meshgrid(np.linspace(bounds[0], bounds[1], num),
                        np.linspace(bounds[0], bounds[1], num))
     plt.scatter(x, y, s=0.1, color='red')
     axes.contour(xgrid, ygrid, surface_func(xgrid, ygrid))
-    axes.set_xlabel('X')
-    axes.set_ylabel('Y')
-    axes.set_title('Level lines')
-    plt.show()
 
 
 def create_surface(res_x, res_y, res_z, surface_func, bounds=(-4, 4), num=100):
@@ -99,6 +101,7 @@ def create_surface(res_x, res_y, res_z, surface_func, bounds=(-4, 4), num=100):
 
 def main():
     """
+    :MAIN:
     Gradient descent:
     f = x^2 + y^2 :SUCCESS:
     f = x^2 * y^2 * ln(4 * x^2 + y^2) :SUCCESS:
@@ -111,17 +114,40 @@ def main():
     f = x^2 + y^2 :SUCCESS:
     f = x^2 * y^2 * ln(4 * x^2 + y^2) :SUCCESS:
     f = -0.83 * x^2 - 0.23 * y^2 :REJECT: (-infinity)
+
+    :EXTRA:
+    Poorly conditioned function:
+    f = 100 * x^2 + y^2
+    standard :REJECT:
+    golden_ratio :SUCCESS:
+    dichotomy :SUCCESS:
+
+    Noisy function:
+    f = (x^2 + y^2) + random.uniform(0, 0.1)
+
+    Multimodal function:
+    f = (x^2 + y - 11)^2 + (x + y^2 - 7)^2
+    standard :SUCCESS:
+    start = (-1, 1) - 14 iterations
+    start = (0, -4) - 20 iterations
+    golden_ratio :SUCCESS:
+    start = (-1, 1) - 215 iterations
+    start = (0, -4) - 382 iterations
+    dichotomy :SUCCESS:
+    start = (-1, 1) - 215 iterations
+    start = (0, -4) - 382 iterations
     """
+    
+    res_x, res_y, res_z, answer = gradient_descent(
+        '(x ** 2 + y - 11) ** 2 + (x + y ** 2 - 7) ** 2', -1, 1, method='golden_ratio')
 
-    print(golden_ratio(lambda x: (x - 2) ** 2 + 4, -10, 10))
-
-    create_surface(lambda x, y: x ** 2 + y ** 2)
-    res_x, res_y, res_z, answer = gradient_descent('(x**2 + y - 11) ** 2 + (x + y ** 2 - 7)**2',
-                                                   0, -4, method='golden_ratio')
+    create_surface(res_x, res_y, res_z,
+                   lambda x, y: (x ** 2 + y - 11) ** 2 + (x + y ** 2 - 7) ** 2, bounds=(-4, 4))
+    
+    level_lines(res_x, res_y, lambda x, y: (x ** 2 + y - 11) ** 2 + (x + y ** 2 - 7) ** 2)
+    
     print(answer)
-    print(nelder_mead(lambda x: x[0] ** 2 + x[1] ** 2, -1, 1))
-    create_surface(res_x, res_y, res_z, lambda x, y: x**2 + 3*y**2 - 2*x*y - 2*x)
-    level_lines(res_x, res_y, lambda x, y: (x**2 + y - 11) ** 2 + (x + y ** 2 - 7)**2)
+    
     plt.show()
 
 
