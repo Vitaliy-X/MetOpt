@@ -83,7 +83,7 @@ def level_lines(x, y,surface_func, bounds=(-4, 4), num=1000):
     plt.show()
 
 
-def create_surface(surface_func, bounds=(-1, 1), num=100):
+def create_surface(res_x, res_y, res_z, surface_func, bounds=(-4, 4), num=100):
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -94,6 +94,7 @@ def create_surface(surface_func, bounds=(-1, 1), num=100):
     Z = surface_func(X, Y)
 
     ax.plot_surface(X, Y, Z, linewidth=0.1, cmap=plt.cm.coolwarm)
+    ax.plot(res_x, res_y, res_z, 'r.', label='top', zorder=4, markersize=5)
 
 
 def main():
@@ -119,7 +120,8 @@ def main():
                                                    0, -4, method='golden_ratio')
     print(answer)
     print(nelder_mead(lambda x: x[0] ** 2 + x[1] ** 2, -1, 1))
-
+    create_surface(res_x, res_y, res_z, lambda x, y: x**2 + 3*y**2 - 2*x*y - 2*x)
+    level_lines(res_x, res_y, lambda x, y: (x**2 + y - 11) ** 2 + (x + y ** 2 - 7)**2)
     plt.show()
 
 
