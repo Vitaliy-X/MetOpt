@@ -12,6 +12,8 @@ def gradient_descent(foo, x0, y0, step=0.1, eps=0.0001, method='standard'):
     f_x = lambdify((x, y), parsed.diff(x))
     f_y = lambdify((x, y), parsed.diff(y))
 
+    res_x, res_y, res_z = [], [], []
+
     methods = {
         'standard': lambda x0, y0: (x0 - step * f_x(x0, y0), y0 - step * f_y(x0, y0)),
         'golden_ratio': lambda x0, y0: (
@@ -26,10 +28,13 @@ def gradient_descent(foo, x0, y0, step=0.1, eps=0.0001, method='standard'):
 
     while True:
         x_k, y_k = methods[method](x0, y0)
+        res_x.append(x0)
+        res_y.append(y0)
+        res_z.append(f(x0, y0))
         if np.abs(f(x_k, y_k) - f(x0, y0)) < eps:
-            return {'x': (round(x_k, 5), round(y_k, 5)), 'fun': round(f(x_k, y_k), 5)}
+            break
         x0, y0 = x_k, y_k
-
+   return res_x, res_y, res_z, {'x': (round(x_k, 5), round(y_k, 5)), 'fun': round(f(x_k, y_k), 5)}
 
 # Main.Task №2
 def golden_ratio(f, l, r, eps=0.0001):
@@ -65,13 +70,17 @@ def dichotomy(f, l, r, eps=0.0001):
     return round((r + l) / 2, 5)
 
 
-def create_plot(plot_func, bounds=(-10, 10), num=100):
-    fig, ax = plt.subplots()
-
-    X = np.linspace(bounds[0], bounds[1], num)
-    Y = plot_func(X)
-
-    ax.plot(X, Y)
+def level_lines(x, y,surface_func, bounds=(-4, 4), num=1000):
+    fig = plt.figure()
+    axes = fig.add_subplot()
+    xgrid, ygrid = np.meshgrid(np.linspace(bounds[0], bounds[1], num),
+                       np.linspace(bounds[0], bounds[1], num))
+    plt.scatter(x, y, s=0.1, color='red')
+    axes.contour(xgrid, ygrid, surface_func(xgrid, ygrid))
+    axes.set_xlabel('X')
+    axes.set_ylabel('Y')
+    axes.set_title('Level lines')
+    plt.show()
 
 
 def create_surface(surface_func, bounds=(-1, 1), num=100):
@@ -103,13 +112,12 @@ def main():
     f = -0.83 * x^2 - 0.23 * y^2 :REJECT: (-infinity)
     """
 
-    create_plot(lambda x: (x - 2) ** 2 + 4)
     print(golden_ratio(lambda x: (x - 2) ** 2 + 4, -10, 10))
 
     create_surface(lambda x, y: x ** 2 + y ** 2)
-    print(gradient_descent('x**2 * y**2 * ln(4 * x**2 + y**2)', -1, 1))
-    print(gradient_descent('x**2 * y**2 * ln(4 * x**2 + y**2)', -1, 1, method='golden_ratio'))
-    print(gradient_descent('x**2 * y**2 * ln(4 * x**2 + y**2)', -1, 1, method='dichotomy'))
+    res_x, res_y, res_z, answer = gradient_descent('(x**2 + y - 11) ** 2 + (x + y ** 2 - 7)**2',
+                                                   0, -4, method='golden_ratio')
+    print(answer)
     print(nelder_mead(lambda x: x[0] ** 2 + x[1] ** 2, -1, 1))
 
     plt.show()
