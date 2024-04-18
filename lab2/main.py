@@ -3,15 +3,34 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from matplotlib.colors import Normalize
 from sympy import Symbol, lambdify, pi, exp, sin, cos
+from scipy.optimize import line_search
 
 
 # Main.Task №1 (using numpy)
 def newton_method(f, x, grad, hess, eps=1e-7,
                   method='standard', callback=None):
+    """
+    Perform Newton's method for optimization.
+
+    Parameters:
+    f (callable): Objective function.
+    x (ndarray): Initial guess.
+    grad (callable): Gradient of the objective function.
+    hess (callable): Hessian matrix of the objective function.
+    eps (float, optional): Tolerance for convergence. Defaults to 1e-7.
+    method (str, optional): Method for step length selection. Options are 'standard', 'dichotomy', and 'wolfe'. Defaults to 'standard'.
+    callback (callable, optional): Function to call after each iteration. Defaults to None.
+
+    Returns:
+    dict: Dictionary containing the optimized solution and other information.
+          - 'x': Optimized solution.
+          - 'fun': Value of the objective function at the optimized solution.
+          - 'it': Number of iterations.
+    """
     methods = {
-        'wolfe': wolfe,
         'dichotomy': dichotomy,
         'standard': lambda *args: 1,
+        'wolfe': lambda *args: 1,
     }
 
     it = 0
@@ -43,6 +62,18 @@ def newton_method(f, x, grad, hess, eps=1e-7,
 
 # Main.Task №2
 def dichotomy(f, x, grad, _, eps=1e-7):
+    """
+    Perform dichotomy method for step length selection in Newton's method.
+
+    Parameters:
+    f (callable): Objective function.
+    x (ndarray): Current point.
+    grad (ndarray): Gradient of the objective function at the current point.
+    eps (float, optional): Tolerance for convergence. Defaults to 1e-7.
+
+    Returns:
+    float: Optimal step length.
+    """
     l = eps
     r = 50.0
     delta = eps / 2
@@ -65,40 +96,55 @@ def dichotomy(f, x, grad, _, eps=1e-7):
 # Main.Task №3 (using scipy.optimize)
 def scipy_newton_method(f, x, jac, eps=1e-5,
                         method='Newton-CG', callback=None):
+    """
+    Perform optimization using Newton's method implemented in scipy.optimize.minimize.
+
+    Parameters:
+    f (callable): Objective function.
+    x (ndarray): Initial guess.
+    jac (callable): Jacobian (gradient) of the objective function.
+    eps (float, optional): Tolerance for convergence. Defaults to 1e-5.
+    method (str, optional): Method for optimization. Options are 'BFGS' and 'Newton-CG'. Defaults to 'Newton-CG'.
+    callback (callable, optional): Function to call after each iteration. Defaults to None.
+
+    Returns:
+    OptimizeResult: Result object returned by scipy.optimize.minimize.
+    """
     assert method in ('BFGS', 'Newton-CG')
     return minimize(f, x, jac=jac, tol=eps,
                     method=method, callback=callback)
 
 
 # Additional.Task №1
-def wolfe(f, x, delta, grad, c1=1e-4, c2=0.9, it=100):
-    alpha = 1.0
-    alpha_min = 0
-    alpha_max = np.inf
+def wolfe(func, grad, x0, p):
+    """
+    Perform Wolfe condition check for step length selection.
 
-    f_val = f(x)
-    grad_val = grad(x)
+    Parameters:
+    func (callable): Objective function.
+    grad (callable): Gradient of the objective function.
+    x0 (ndarray): Current point.
+    p (ndarray): Search direction.
 
-    for i in range(it):
-        x_new = x - alpha * delta
-        f_val_new = f(x_new)
-
-        if f_val_new <= f_val + c1 * alpha * np.dot(grad_val, delta):
-            if np.abs(np.dot(grad(x_new), delta)) <= c2 * np.dot(grad_val, delta):
-                break
-            else:
-                alpha_max = alpha
-                alpha = (alpha_min + alpha_max) / 2
-        else:
-            alpha_max = alpha
-            alpha = (alpha_min + alpha_max) / 2
-
-        alpha /= 2
-
+    Returns:
+    float: Optimal step length satisfying the Wolfe conditions.
+    """
+    alpha, _, _, _ = line_search(func, grad, x0, p)
+    if alpha is None:
+        alpha = 0
     return alpha
 
 
 def level_lines(x, surface_func, bounds=(-5, 5), num=100):
+    """
+    Plot level lines of a surface.
+
+    Parameters:
+    x (ndarray): Points to be plotted.
+    surface_func (callable): Function defining the surface.
+    bounds (tuple, optional): Bounds for plotting. Defaults to (-5, 5).
+    num (int, optional): Number of points for plotting. Defaults to 100.
+    """
     fig = plt.figure()
     axes = fig.add_subplot(111)
     axes.set_xlabel('X')
@@ -117,6 +163,16 @@ def level_lines(x, surface_func, bounds=(-5, 5), num=100):
 
 
 def create_surface(x_val, fun_val, surface_func, bounds=(-5, 5), num=100):
+    """
+    Create a 3D surface plot.
+
+    Parameters:
+    x_val (list): List of points.
+    fun_val (list): Values of the objective function at the points.
+    surface_func (callable): Function defining the surface.
+    bounds (tuple, optional): Bounds for plotting. Defaults to (-5, 5).
+    num (int, optional): Number of points for plotting. Defaults to 100.
+    """
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -133,7 +189,6 @@ def create_surface(x_val, fun_val, surface_func, bounds=(-5, 5), num=100):
 
 
 def main():
-
     """
     :MAIN:
     Newton's method:
