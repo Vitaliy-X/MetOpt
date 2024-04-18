@@ -116,22 +116,30 @@ def scipy_newton_method(f, x, jac, eps=1e-5,
 
 
 # Additional.Task №1
-def wolfe(func, grad, x0, p):
-    """
-    Perform Wolfe condition check for step length selection.
+def wolfe(f, x, delta, grad, c1=1e-4, c2=0.9, it=100):
+    alpha = 1.0
+    alpha_min = 0.0
+    alpha_max = np.inf
 
-    Parameters:
-    func (callable): Objective function.
-    grad (callable): Gradient of the objective function.
-    x0 (ndarray): Current point.
-    p (ndarray): Search direction.
+    f_val = f(x)
+    grad_val = grad(x)
 
-    Returns:
-    float: Optimal step length satisfying the Wolfe conditions.
-    """
-    alpha, _, _, _ = line_search(func, grad, x0, p)
-    if alpha is None:
-        alpha = 0
+    for i in range(it):
+        x_new = x - alpha * delta
+        f_val_new = f(x_new)
+
+        if f_val_new <= f_val + c1 * alpha * np.dot(grad_val, delta):
+            if np.dot(grad(x_new), delta) >= c2 * np.dot(grad_val, delta):
+                break
+            else:
+                alpha_min = alpha
+                alpha = (alpha_min + alpha_max) / 2
+        else:
+            alpha_max = alpha
+            alpha = (alpha_min + alpha_max) / 2
+
+        alpha /= 2
+
     return alpha
 
 
