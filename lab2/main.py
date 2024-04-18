@@ -2,35 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 from matplotlib.colors import Normalize
-from sympy import Symbol, lambdify, pi, exp, sin, cos
-from scipy.optimize import line_search
+from sympy import Symbol, lambdify, parsing
 
 
 # Main.Task №1 (using numpy)
 def newton_method(f, x, grad, hess, eps=1e-7,
                   method='standard', callback=None):
-    """
-    Perform Newton's method for optimization.
-
-    Parameters:
-    f (callable): Objective function.
-    x (ndarray): Initial guess.
-    grad (callable): Gradient of the objective function.
-    hess (callable): Hessian matrix of the objective function.
-    eps (float, optional): Tolerance for convergence. Defaults to 1e-7.
-    method (str, optional): Method for step length selection. Options are 'standard', 'dichotomy', and 'wolfe'. Defaults to 'standard'.
-    callback (callable, optional): Function to call after each iteration. Defaults to None.
-
-    Returns:
-    dict: Dictionary containing the optimized solution and other information.
-          - 'x': Optimized solution.
-          - 'fun': Value of the objective function at the optimized solution.
-          - 'it': Number of iterations.
-    """
     methods = {
+        'wolfe': wolfe,
         'dichotomy': dichotomy,
         'standard': lambda *args: 1,
-        'wolfe': lambda *args: 1,
     }
 
     it = 0
@@ -39,7 +20,7 @@ def newton_method(f, x, grad, hess, eps=1e-7,
         it += 1
 
         if callback:
-            callback((x, f(x)))
+            callback(x)
 
         gradient = grad(x)
         hessian_inv = np.linalg.inv(hess(x))
@@ -49,33 +30,15 @@ def newton_method(f, x, grad, hess, eps=1e-7,
         x_prev = x
         x = x - methods[method](f, x, delta, grad) * delta
 
-        # || delta || < eps
-        """
-        if np.linalg.norm(delta) < eps:
-            return {'x': x, 'fun': f(x), 'it': it}
-        """
-
-        # || x_{k} - x_{k - 1} || < eps
-        if np.linalg.norm(x - x_prev) < eps:
+        if (np.linalg.norm(delta) < eps or
+                np.linalg.norm(x - x_prev) < eps):
             return {'x': x, 'fun': f(x), 'it': it}
 
 
 # Main.Task №2
 def dichotomy(f, x, grad, _, eps=1e-7):
-    """
-    Perform dichotomy method for step length selection in Newton's method.
-
-    Parameters:
-    f (callable): Objective function.
-    x (ndarray): Current point.
-    grad (ndarray): Gradient of the objective function at the current point.
-    eps (float, optional): Tolerance for convergence. Defaults to 1e-7.
-
-    Returns:
-    float: Optimal step length.
-    """
     l = eps
-    r = 50.0
+    r = 100.0
     delta = eps / 2
 
     def foo(xi):
@@ -96,21 +59,7 @@ def dichotomy(f, x, grad, _, eps=1e-7):
 # Main.Task №3 (using scipy.optimize)
 def scipy_newton_method(f, x, jac, eps=1e-5,
                         method='Newton-CG', callback=None):
-    """
-    Perform optimization using Newton's method implemented in scipy.optimize.minimize.
-
-    Parameters:
-    f (callable): Objective function.
-    x (ndarray): Initial guess.
-    jac (callable): Jacobian (gradient) of the objective function.
-    eps (float, optional): Tolerance for convergence. Defaults to 1e-5.
-    method (str, optional): Method for optimization. Options are 'BFGS' and 'Newton-CG'. Defaults to 'Newton-CG'.
-    callback (callable, optional): Function to call after each iteration. Defaults to None.
-
-    Returns:
-    OptimizeResult: Result object returned by scipy.optimize.minimize.
-    """
-    assert method in ('BFGS', 'Newton-CG')
+    assert method in ('Newton-CG', 'BFGS')
     return minimize(f, x, jac=jac, tol=eps,
                     method=method, callback=callback)
 
@@ -121,11 +70,13 @@ def wolfe(f, x, delta, grad, c1=1e-4, c2=0.9, it=100):
     alpha_min = 0.0
     alpha_max = np.inf
 
+    delta = -delta
+
     f_val = f(x)
     grad_val = grad(x)
 
     for i in range(it):
-        x_new = x - alpha * delta
+        x_new = x + alpha * delta
         f_val_new = f(x_new)
 
         if f_val_new <= f_val + c1 * alpha * np.dot(grad_val, delta):
@@ -143,16 +94,7 @@ def wolfe(f, x, delta, grad, c1=1e-4, c2=0.9, it=100):
     return alpha
 
 
-def level_lines(x, surface_func, bounds=(-5, 5), num=100):
-    """
-    Plot level lines of a surface.
-
-    Parameters:
-    x (ndarray): Points to be plotted.
-    surface_func (callable): Function defining the surface.
-    bounds (tuple, optional): Bounds for plotting. Defaults to (-5, 5).
-    num (int, optional): Number of points for plotting. Defaults to 100.
-    """
+def level_lines(x, surface_func, bounds=(-10, 10), num=100):
     fig = plt.figure()
     axes = fig.add_subplot(111)
     axes.set_xlabel('X')
@@ -170,17 +112,7 @@ def level_lines(x, surface_func, bounds=(-5, 5), num=100):
     axes.contour(xgrid, ygrid, surface_func([xgrid, ygrid]))
 
 
-def create_surface(x_val, fun_val, surface_func, bounds=(-5, 5), num=100):
-    """
-    Create a 3D surface plot.
-
-    Parameters:
-    x_val (list): List of points.
-    fun_val (list): Values of the objective function at the points.
-    surface_func (callable): Function defining the surface.
-    bounds (tuple, optional): Bounds for plotting. Defaults to (-5, 5).
-    num (int, optional): Number of points for plotting. Defaults to 100.
-    """
+def create_surface(x_val, fun_val, surface_func, bounds=(-10, 10), num=100):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -199,18 +131,8 @@ def create_surface(x_val, fun_val, surface_func, bounds=(-5, 5), num=100):
 def main():
     """
     :MAIN:
-    Newton's method:
-    Rosenbrock function:
-    f = (1 - x)^2 + 100 * (y - x^2)^2
-    Polynomial function:
-    f = (x^2 + y - 11)^2 + (x + y^2 - 7)^2
-    f = (x + 2 * y - 7)^2 + (2 * x + y - 5)^2
-    Non-polynomial function:
-    f = sin(x + y) + (x - y)^2 - 1.5 * x + 2.5 * y + 1
-    f = -cos(x) * cos(y) * exp(-((x - pi)^2 + (y - pi)^2))
-
-    Newton's method (scipy.optimize.minimize realization):
-    Rosenbrock function:
+    Rosenbrock functions:
+    f = (3 - x)^2 + 20 * (y - x^2)^2
     f = (1 - x)^2 + 100 * (y - x^2)^2
     Polynomial function:
     f = (x^2 + y - 11)^2 + (x + y^2 - 7)^2
@@ -221,11 +143,14 @@ def main():
     """
 
     x, y = Symbol('x'), Symbol('y')
-    foo = (1 - x)**2 + 100 * (y - x ** 2)**2
-    # foo = (x**2 + y - 11)**2 + (x + y**2 - 7)**2
-    # foo = (x + 2 * y - 7)**2 + (2 * x + y - 5)**2
-    # foo = sin(x + y) + (x - y)**2 - 1.5 * x + 2.5 * y + 1
-    # foo = -cos(x) * cos(y) * exp(-((x - pi)**2 + (y - pi)**2))
+    parse = '(3 - x)**2 + 20 * (y - x**2)**2'
+    # parse = '(1 - x)**2 + 100 * (y - x**2)**2'
+    # parse = '(x**2 + y - 11)**2 + (x + y**2 - 7)**2'
+    # parse = '(x + 2 * y - 7)**2 + (2 * x + y - 5)**2'
+    # parse = 'sin(x + y) + (x - y)**2 - 1.5 * x + 2.5 * y + 1'
+    # parse = '-cos(x) * cos(y) * exp(-((x - pi)**2 + (y - pi)**2))'
+
+    foo = parsing.parse_expr(parse)
 
     f = lambdify((x, y), foo)
 
@@ -255,19 +180,20 @@ def main():
     x_val, fun_val = [], []
 
     def callback(hist):
-        x_val.append(hist[0])
-        fun_val.append(hist[1])
+        x_val.append(hist)
+        fun_val.append(fun(hist))
 
-    result = newton_method(fun, np.array([-1, -1]), fun_jac,
-                           fun_hess, method='wolfe', callback=callback)
+    result = newton_method(fun, np.array([1, 1]), fun_jac,
+                           fun_hess, method='dichotomy', callback=callback)
 
     print(result)
 
-    level_lines(x_val, lambda vec: fun(vec))
+    if x_val and fun_val:
+        level_lines(x_val, lambda vec: fun(vec))
 
-    create_surface(x_val, fun_val, lambda vec: fun(vec))
+        create_surface(x_val, fun_val, lambda vec: fun(vec))
 
-    plt.show()
+        plt.show()
 
 
 if __name__ == '__main__':
