@@ -24,8 +24,8 @@ def stochastic_gradient_descent(
         for i in range(0, x.shape[0], batch):
             it += 1
 
-            xi = x[i:i+batch]
-            yi = y[i:i+batch]
+            xi = x[i:i + batch]
+            yi = y[i:i + batch]
 
             h = learning_rate[learning_rate_method](it)
 
@@ -41,6 +41,33 @@ def stochastic_gradient_descent(
             w, b = w_k, b_k
 
     return {'w': w, 'b': b, 'it': it}
+
+
+# Main.Task №3
+def train_with_tensorflow_optimizer(X, Y, optimizer, epochs=50, batch_size=32):
+    X = tf.constant(X, dtype=tf.float32)
+    Y = tf.constant(Y, dtype=tf.float32)
+
+    w = tf.Variable(tf.random.normal([1, 1]), name='weight')
+    b = tf.Variable(tf.random.normal([1]), name='bias')
+
+    def model(x):
+        return tf.matmul(x, w) + b
+
+    def loss_fn(y_true, y_pred):
+        return tf.reduce_mean(tf.square(y_true - y_pred))
+
+    for epoch in range(epochs):
+        for i in range(0, X.shape[0], batch_size):
+            xi = X[i:i + batch_size]
+            yi = Y[i:i + batch_size]
+            with tf.GradientTape() as tape:
+                y_pred = model(xi)
+                loss = loss_fn(yi, y_pred)
+            gradients = tape.gradient(loss, [w, b])
+            optimizer.apply_gradients(zip(gradients, [w, b]))
+
+    return w.numpy(), b.numpy()
 
 
 def create_plot(x, y, w, b):
@@ -71,6 +98,22 @@ def main():
         print(result)
 
         create_plot(X, Y, result.get('w'), result.get('b'))
+
+    print("========== TensorFlow optimizers ==========")
+
+    optimizers = {
+        'SGD': tf.optimizers.SGD(learning_rate=0.01),
+        'Momentum': tf.optimizers.SGD(learning_rate=0.01, momentum=0.9),
+        'Nesterov': tf.optimizers.SGD(learning_rate=0.01, momentum=0.9, nesterov=True),
+        'AdaGrad': tf.optimizers.Adagrad(learning_rate=2.0),
+        'RMSProp': tf.optimizers.RMSprop(learning_rate=0.01),
+        'Adam': tf.optimizers.Adam(learning_rate=0.01)
+    }
+
+    for name, optimizer in optimizers.items():
+        w, b = train_with_tensorflow_optimizer(X, Y, optimizer, epochs=1000, batch_size=32)
+        print(f"{name} - Weight: {w.flatten()}, Bias: {b}")
+        create_plot(X, Y, w, b)
 
     plt.show()
 
